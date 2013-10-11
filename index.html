@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+    <title>Poker Evaluator</title>
+    <meta charset="utf-8" />
+    
+    <!-- Set the viewport width to device width for mobile -->  
+    <meta content='True' name='HandheldFriendly' />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    
+    <!-- Place favicon.ico and apple-touch-icon.png in root directory -->
+    
+    <!--[if lt IE 9]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    
+    <!-- IE Fix for HTML5 Tags -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+</head>
+
+<body data-role="page">
+<h1>Poker Eval Test Page</h1>
+<div>
+    <p>hand: 2H, AC, 7C, 2D, 3S, QS</p>
+    <p>evaluates to: <span id="result"></span></p>
+</div>
+
+<script src="js/pokereval.js"></script>
+<script src="js/test.js"></script>
+
+</body>
+</html>
