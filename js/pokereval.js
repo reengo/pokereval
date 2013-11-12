@@ -1,19 +1,39 @@
-/*
+/* ============================
  * @preserve PokerEval.JS
  *
  * @version 0.1.0
  * author: Ringo Bautista
  * https://github.com/reengo
  * @license MIT License
- */
+ * ============================*/
+
+var PokerText = {
+	suits:['C','S','H','D'],
+	ranks:['A','2','3','4','5','6','7','8','9','10','J','Q','K'],
+	words:['Ace','Deus','Trey','4','5','6','7','8','9','10','Jack','Queen','King','Ace'],
+	invalid:'invalid value',
+	highCard:'high card ',
+	pairOf:	'pair of ', 
+	twoPairsOf:	'two pairs of ', 
+	threeOfAKind:'three of a kind ', 
+	highStraight:' high straight', 
+	flush:'flush', 
+	fullHouse:'full house ', 
+	fourOfAKind:'four of a kind ', 
+	straightFlush:'straight flush ',
+	royalFlush:'royal flush', 
+	with:'with',
+	over:'over',
+	high:'high'
+} 
 
 function PokerEval(cards){
 	var that = this;
 	this.cards = cards;
 	this.ranks=[];
-	this.suits=['C','S','H','D'];
-	this.value=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-	this.valueWords=['Ace','Deus','Trey','4','5','6','7','8','9','10','Jack','Queen','King','Ace'];
+	this.suits=PokerText.suits;
+	this.value=PokerText.ranks;
+	this.valueWords=PokerText.words;
 	this.flush=false;
 	this.straight=[];
 	this.pairs=[];
@@ -125,8 +145,6 @@ PokerEval.prototype.getValue = function(){
     // now we check for straights
 	this.straight = this.checkStraight( this.ranks );
 
-	console.log(this.straight);
-
     if(this.straight[0]){
     	value[0] = 5;
 	   	value[1] = this.straight[2];
@@ -204,7 +222,7 @@ PokerEval.prototype.checkStraight = function(ranks){
     }
 
     flush = this.checkFlush(sCards); //is it a straight flush?
-    console.log(sCards);
+
     // royal straight
     if (ranks[9]>=1 && ranks[10]>=1 && ranks[11]>=1 && ranks[12]>=1 && ranks[0]>=1){
         straight=true;
@@ -227,11 +245,7 @@ PokerEval.prototype.checkStraight = function(ranks){
 PokerEval.prototype.checkPair = function(ranks){
 	var same=same2=1;
 	var lowPair=highGroup=0;
-	//[2,0,0,0,0,0,0,0,0,0,0,0,0]
-	//same = 2
-	//same2 = 1
-	//low = 0
-	//high = 0
+
 	for (var i = 12; i >= 0; i--) {
 		
 		if (ranks[i] > same) {
@@ -289,18 +303,203 @@ PokerEval.prototype.translateCard =function( rank, suit ){
 
 PokerEval.prototype.translateValue = function( value, rank, spair, kicker ){
 	var valueString = [
-		'invalid value', //no value
-		'high card ' + this.translateCard( rank ),
-		'pair of ' + this.translateCard( rank ) + 's', // 1 pair
-		'two pairs of ' + this.translateCard( rank ) + ' ' + this.translateCard( spair ) + ' with ' + this.translateCard( kicker ) + ' kicker', //2pairs
-		'three of a kind ' + this.translateCard( rank ) + 's', //three of a kind
-		this.translateCard( rank ) + ' high straight', // straight
-		'flush', // flush
-		'full house ' + this.translateCard( rank ) + ' over ' + this.translateCard( spair ), // fullhouse
-		'four of a kind ' + this.translateCard( rank ), //four of a kind
-		'straight flush ' + this.translateCard( rank ) + ' high', // straight flush
-		'royal flush' //royal flush
+		PokerText.invalid, //no value
+		PokerText.highCard + this.translateCard( rank ),
+		PokerText.pairOf + this.translateCard( rank ) + 's', // 1 pair
+		PokerText.twoPairsOf + this.translateCard( rank ) + ' ' + this.translateCard( spair ) + PokerText.with + this.translateCard( kicker ) + PokerText.kicker, //2pairs
+		PokerText.threeOfAKind + this.translateCard( rank ) + 's', //three of a kind
+		this.translateCard( rank ) + PokerText.highStraight, // straight
+		PokerText.flush, // flush
+		PokerText.fullHouse + this.translateCard( rank ) + PokerText.fullHouse + this.translateCard( spair ), // fullhouse
+		PokerText.fourOfAKind + this.translateCard( rank ), //four of a kind
+		PokerText.straightFlush + this.translateCard( rank ) + PokerText.high, // straight flush
+		PokerText.royalFlush //royal flush
 	];
 
 	return valueString[ value ];
+}
+
+/* ============================
+ * @preserve Holdem.JS
+ *
+ * @version 0.1.0
+ * author: Ringo Bautista
+ * https://github.com/reengo
+ * @license MIT License
+ * ==========================*/
+
+function Holdem(board, players){
+	var that = this;
+	this.board = board;
+	this.players = players;
+	this.hands = [];
+	this.handRankings = [];
+	this.winners = [];
+	this.topCardRank;
+	
+	this.hands = this.getHands();
+	this.handRankings = this.getHandRankings();
+	
+	this.evaluateHands();
+	
+	this.topCardRank = this.getTopRank();
+	this.winners = this.getWinners();
+}
+
+/*
+* @param 
+* @return Array[
+*		0:int - id
+*		1:Array - Cards Array
+*	]
+*/
+
+Holdem.prototype.getHands = function(){
+	var hands = [];
+	// get card values from players and concat community
+
+	for (var i = 0; i < this.players.length; i++) {
+		if(this.players[i].length == 2){
+			var pcards = this.players[i][1];
+			pcards.concat(this.board);
+			hands[i] = [ this.players[i][0], pcards.concat(board) ];
+		}				
+	}
+
+	return hands;
+}
+
+/*
+* @param 
+* @return 
+*/
+
+Holdem.prototype.evaluateHands = function(){
+
+	//evaluate all cards and push to players 
+	for(var i=0;i<= this.hands.length-1; i++ ){
+		var pvalue = new PokerEval( this.hands[i][1] );
+
+		
+		this.hands[i] = this.hands[i].concat( pvalue );
+		
+		//loop through handranks and count similar ranks
+		for (var j=0; j<11; j++ ){
+			if( pvalue[0][0] == j ){
+				this.handRankings[j]++;
+			}
+
+		}
+	}		
+
+	//sort hands based on hand ranking
+	this.hands = this.hands.sort(function (a,b){
+		if (a[2][0] > b[2][0]) return -1;
+		if (a[2][0] < b[2][0]) return 1;
+		return 0;
+	});
+}
+
+
+/*
+* @param 
+* @return Array[
+*		0:int - id
+*		1:Array - Cards Array
+*		2:Array - Hand Value Array
+*		3:String - Hand Value String
+*	]
+*/
+
+Holdem.prototype.getWinners = function(){
+	//if the highest rank only has 1 winner. first index wins.
+	var winners = [];
+	if( this.handRankings[ this.topCardRank ] == 1 ){
+		winners.push( this.hands[0] ); //0 being the index of the sole winner.
+	}else{
+		var sameRankHands = []; //winners with same rank but still needs to be sorted out
+		for ( var i = 0; i < this.hands.length; i++){
+			var hcard = this.hands[i][2][1] == 0 ? 13 : this.hands[i][2][1];
+
+			//only push hands to winners if value is equal to top rank
+			//if there are more than 2 winners of the same rank, sort them
+			if( this.hands[i][2][0] == this.topCardRank){
+				if( this.handRankings[ this.topCardRank ] > 1 ){
+					sameRankHands.push( this.hands[i] );
+				}else{
+					winners.push( this.hands[i] ); 
+				}
+			}
+		}
+
+		// if we still get more than 1 winner check the higher pair
+		var sameRankWinners = [];
+		for( var i = 0 ; i < sameRankHands.length-1; i++ ){
+			if( sameRankHands[i][2][1] > sameRankHands[i+1][2][1] ){
+				sameRankWinners = [];
+				sameRankWinners.push( sameRankHands[i] );
+			}else{
+				sameRankWinners.push( sameRankHands[sameRankHands.length] );
+			}
+		}
+
+		// if we still get more than 1 winner check the lower pair
+		var sameRankWinner = [];
+		if( sameRankWinners.length > 1 ){
+			for( var i = 0 ; i < sameRankWinners.length-1; i++ ){
+				if( sameRankWinners[i][2][2] > sameRankWinners[i+1][2][2] ){
+					sameRankWinner.push( sameRankHands[i] );
+				}else{
+					sameRankWinner.push( sameRankHands[sameRankHands.length] );
+				}
+			}
+		}else{
+			winners.push( sameRankWinners[0] );
+		}
+
+		//sort winners accoring to highest card value
+		winners = winners.sort(function (a,b){
+			if( a[0][0][1] == b[0][0][1] ){
+				if (a[0][0][2] > b[0][0][2]) return -1;
+				if (a[0][0][2] < b[0][0][2]) return 1;
+				return 0;
+			}
+			if (a[0][0][1] > b[0][0][1]) return -1;
+			if (a[0][0][1] < b[0][0][1]) return 1;
+			return 0;
+		});
+
+		return winners;
+	}
+}
+
+/*
+* @param 
+* @return Array - Rankings reset to 0;
+*/
+
+Holdem.prototype.getHandRankings = function(){
+	//set handRankings, 11 total hand ranks
+	var rankings = [];
+	for(var i = 0; i < 11; i++ ){ 
+		rankings[i] = 0;
+	}
+	return rankings;
+}
+
+/*
+* @param 
+* @return INT - Highest Rank from winning hand
+*/
+
+Holdem.prototype.getTopRank = function( ){
+	//loop through all ranks again and determine which rank won and how many.
+	var topRank;
+	for(var i = 0; i < this.handRankings.length; i++ ){ 
+		if(this.handRankings[i] > 0) {
+	        topRank = i;
+	    }
+	}
+
+	return topRank;
 }

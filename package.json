@@ -2,8 +2,8 @@
   "name": "poker-eval",
   "version": "0.1.1",
   "description": "simple and lightweight poker evaluator to evaluate 5 to unlimited number of cards",
-  "homepage": "http://github.com/chenosaurus/poker-evaluator",
-  "keywords": ["poker", "texasholdem", "games", "casino"],
+  "homepage": "http://github.com/reengo/",
+  "keywords": ["poker", "texasholdem", "games"],
   "author": "Ringo Bautista <bautistarin@gmail.com>",
   "contributors": [
   ],
