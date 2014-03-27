@@ -9,22 +9,79 @@
 //console.log( hand );
 
 //holdem test
+var board = [ 'H5', 'S4', 'DA', 'D4', 'D9'];
 var players = [
-	[ 0, ['20', '112'] ],
-	[ 24, ['32', '15'] ],
-	[ 5125, ['20', '010'] ],
-	[ 1, ['01', '09'] ]
+	[ 0, ['H8', 'H3'] ],
+	[ 1, ['S3', 'H10'] ]
+	// [ 2, ['H2', 'SJ'] ],
+	// [ 3, ['S5', 'C3'] ],
+	// [ 4, ['HQ', 'S4'] ],
+	// [ 5, ['H7', 'CQ'] ],
+	// [ 6, ['C7', 'S9'] ],
+	// [ 7, ['C5', 'S5'] ],
+	// [ 8, ['C9', 'H5'] ],
+	// [ 9, ['H8', 'C4'] ]
 ];
-
-var board = [ '11', '05', '13', '00', '17'];
-
-var holdem = new Holdem( board, players );
-
-for (var i = 0; i < players.length; i++){
-	var el = document.createElement('div');
-	el.innerHTML = 'Player ID: ' + players[i][0] + ' - Cards: [ ' + players[i][1] + ' ]'; 
-	document.getElementById('players').appendChild(el);
+console.log( players );
+for( player in players ){
+	players[ player ][ 1 ] = convertString( players[ player ][ 1 ] );
 }
 
-document.getElementById('board').innerHTML = '[ ' + board + ' ]';
-document.getElementById('result').innerHTML = 'Player ' + holdem.winners[0][0] + ' won! with ' + holdem.winners[0][3];
+board = convertString( board );
+
+evaluatePlayerHands( players, board );
+getWinners( players, board );
+
+function convertString(cards){
+	var suit,rank;
+	for ( card in cards ){
+		suit = PokerText.suits.indexOf(cards[ card ].substr(0,1));
+		rank = PokerText.ranks.indexOf(cards[ card ].substr(1));
+
+		cards[card] = suit+''+rank;
+	}
+	return cards;
+}
+
+function convertID(cards){
+	var suit,rank;
+	for ( card in cards ){
+		suit = PokerText.suits[ cards[ card ].substr(0,1) ];
+		rank = PokerText.ranks[ cards[ card ].substr(1) ];
+
+		cards[card] = suit+''+rank;
+	}
+	return cards;
+}
+
+function evaluatePlayerHands(players,board){
+	for( player in players){
+		var cards = players[player][1];
+		cards = cards.concat(board);
+		var result = new PokerEval( cards );
+		var el = document.createElement('div');
+		el.innerHTML = 'Player ID ' + players[player][0] + ':  hand [ ' + convertID( players[player][1] ) + ' ] = ' + result[1]; 
+		document.getElementById('players').appendChild(el);
+	}
+	document.getElementById('board').innerHTML = '[ ' + convertID( board ) + ' ]';
+}
+
+function getWinners(players,board){
+	for( player in players ){
+		players[ player ][ 1 ] = convertString( players[ player ][ 1 ] );
+	}
+
+	board = convertString( board );
+
+	var holdem = new Holdem( board, players );
+
+	if(holdem.winners.length > 1){
+		for( winner in holdem.winners){
+			var el = document.createElement('div');
+			el.innerHTML = 'Player ' + holdem.winners[winner][0] + ' wins! with ' + holdem.winners[winner][3];
+			document.getElementById('result').appendChild(el);
+		}
+	}else{
+		document.getElementById('result').innerHTML = 'Player ' + holdem.winners[0][0] + ' wins! with ' + holdem.winners[0][3];
+	}
+}

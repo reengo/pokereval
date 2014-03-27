@@ -7,34 +7,16 @@
  * @license MIT License
  * ============================*/
 
-var PokerText = {
-	suits:['C','S','H','D'],
-	ranks:['A','2','3','4','5','6','7','8','9','10','J','Q','K'],
-	words:['Ace','Deus','Trey','4','5','6','7','8','9','10','Jack','Queen','King','Ace'],
-	invalid:'invalid value',
-	highCard:'high card ',
-	pairOf:	'pair of ', 
-	twoPairsOf:	'two pairs of ', 
-	threeOfAKind:'three of a kind ', 
-	highStraight:' high straight', 
-	flush:'flush', 
-	fullHouse:'full house ', 
-	fourOfAKind:'four of a kind ', 
-	straightFlush:'straight flush ',
-	royalFlush:'royal flush', 
-	with:'with',
-	over:'over',
-	high:'high'
-} 
-
 function PokerEval(cards){
 	var that = this;
 	this.cards = cards;
 	this.ranks=[];
 	this.suits=PokerText.suits;
 	this.value=PokerText.ranks;
-	this.valueWords=PokerText.words;
+	this.valueRank=PokerText.valueRank;
+	this.valueSuit=PokerText.valueSuit;
 	this.flush=false;
+	this.flushSuit;
 	this.straight=[];
 	this.pairs=[];
 	this.orderedRanks=[];
@@ -44,6 +26,7 @@ function PokerEval(cards){
 	for (var i=0; i<=12; i++) {
         this.ranks[i]=0;
     }
+
 
     //set increment rank index values based on hand
     for (var i=0; i<=this.cards.length-1 ;i++) {
@@ -87,8 +70,9 @@ PokerEval.prototype.getValue = function(){
         value[3]=this.orderedRanks[2];
         value[4]=this.orderedRanks[3];
         value[5]=this.orderedRanks[4];
+
     }
-   
+
     // since ranks are checked and ordered. we then check for pairs
 	this.pairs = this.checkPair( this.ranks );
 
@@ -109,7 +93,7 @@ PokerEval.prototype.getValue = function(){
         }
     }
 
-    if ( this.pairs[0] == 2){ 
+    if ( this.pairs[0] == 2 && !this.flush && !this.straight[0]){ 
     	if(this.pairs[1] == 2){//check for 2 pairs
 	        value[0] = 3;
 	        value[1] = this.pairs[2]; //highgroup
@@ -123,7 +107,7 @@ PokerEval.prototype.getValue = function(){
 	        		}
 	        	}
 	        }
-	    }else if(this.pairs[1]==1){//check for 1 pair
+	    }else if(this.pairs[1]==1 && !this.flush && !this.straight[0]){//check for 1 pair
 	    	value[0] = 2;
 	        value[1] = this.pairs[2]; //rank of high pair
 	        value[2] = this.orderedRanks[0];
@@ -133,7 +117,7 @@ PokerEval.prototype.getValue = function(){
     }
 
 	//no good cards? just look for the high card
-	if ( this.pairs[0]==1) {
+	if ( this.pairs[0]==1 && !this.flush && !this.straight[0]) {
         value[0] = 1;
         value[1] = this.orderedRanks[0];
         value[2] = this.orderedRanks[1];
@@ -175,6 +159,7 @@ PokerEval.prototype.checkFlush = function(cards){
     for ( card in fCards ){
     	if( fCards[card] >= 5 ){
     		flush = true;
+    		this.flushSuit = fCards.indexOf( fCards[card] );
     	}
     }
     return flush;
@@ -221,7 +206,7 @@ PokerEval.prototype.checkStraight = function(ranks){
     	sCards.push( aceSuit+'0' )
     }
 
-    flush = this.checkFlush(sCards); //is it a straight flush?
+    flush = this.flush; //is it a straight flush?
 
     // royal straight
     if (ranks[9]>=1 && ranks[10]>=1 && ranks[11]>=1 && ranks[12]>=1 && ranks[0]>=1){
@@ -283,13 +268,17 @@ PokerEval.prototype.translateCard =function( rank, suit ){
 	var suitString,rankString,cardName;
 	rank = rank == 13 ? 0 : rank;
 	if ( suit == null ){
-		cardName = this.valueWords[ rank ];
+		cardName = this.valueRank[ rank ];
+	}else if( rank == null ){
+		cardName = this.valueSuit[ suit ];
 	}else{
-		suitString = this.valueWords[ suit ];
-		rankString = this.valueWords[ rank ];
+		suitString = this.valueSuit[ suit ];
+		rankString = this.valueRank[ rank ];
 		cardName = rankString + ' of ' + suitString + 's';
 	}
-	return this.valueWords[ rank ];
+	
+	return cardName;
+	
 } 
 
 /*
@@ -309,8 +298,8 @@ PokerEval.prototype.translateValue = function( value, rank, spair, kicker ){
 		PokerText.twoPairsOf + this.translateCard( rank ) + ' ' + this.translateCard( spair ) + PokerText.with + this.translateCard( kicker ) + PokerText.kicker, //2pairs
 		PokerText.threeOfAKind + this.translateCard( rank ) + 's', //three of a kind
 		this.translateCard( rank ) + PokerText.highStraight, // straight
-		PokerText.flush, // flush
-		PokerText.fullHouse + this.translateCard( rank ) + PokerText.fullHouse + this.translateCard( spair ), // fullhouse
+		this.translateCard( null, this.flushSuit ) + ' ' +PokerText.flush, // flush
+		PokerText.fullHouse + this.translateCard( rank ) + PokerText.over + this.translateCard( spair ), // fullhouse
 		PokerText.fourOfAKind + this.translateCard( rank ), //four of a kind
 		PokerText.straightFlush + this.translateCard( rank ) + PokerText.high, // straight flush
 		PokerText.royalFlush //royal flush
@@ -361,8 +350,8 @@ Holdem.prototype.getHands = function(){
 	for (var i = 0; i < this.players.length; i++) {
 		if(this.players[i].length == 2){
 			var pcards = this.players[i][1];
-			pcards.concat(this.board);
-			hands[i] = [ this.players[i][0], pcards.concat(board) ];
+			pcards = pcards.concat(this.board);
+			hands[i] = [ this.players[i][0], pcards ];
 		}				
 	}
 
@@ -379,7 +368,6 @@ Holdem.prototype.evaluateHands = function(){
 	//evaluate all cards and push to players 
 	for(var i=0;i<= this.hands.length-1; i++ ){
 		var pvalue = new PokerEval( this.hands[i][1] );
-
 		
 		this.hands[i] = this.hands[i].concat( pvalue );
 		
@@ -426,51 +414,71 @@ Holdem.prototype.getWinners = function(){
 			if( this.hands[i][2][0] == this.topCardRank){
 				if( this.handRankings[ this.topCardRank ] > 1 ){
 					sameRankHands.push( this.hands[i] );
+					console.log('tied, check next value');
 				}else{
 					winners.push( this.hands[i] ); 
+					console.log('1 winner');
 				}
 			}
 		}
 
-		// if we still get more than 1 winner check the higher pair
+		// if we still get more than 1 winner check the next value
 		var sameRankWinners = [];
-		for( var i = 0 ; i < sameRankHands.length-1; i++ ){
-			if( sameRankHands[i][2][1] > sameRankHands[i+1][2][1] ){
-				sameRankWinners = [];
-				sameRankWinners.push( sameRankHands[i] );
-			}else{
-				sameRankWinners.push( sameRankHands[sameRankHands.length] );
+		if(sameRankHands.length > 1){
+			//get the rank values first
+			var hiCardValues = [];
+			for(i=0;i<sameRankHands.length;i++){
+				hiCardValues.push(sameRankHands[i][2][1]);
+			}
+			var highest = Math.max.apply(Math, hiCardValues);
+			
+			for( var i = 0 ; i < sameRankHands.length; i++ ){
+				if( sameRankHands[i][2][1] == highest ){
+					sameRankWinners.push( sameRankHands[i] )
+				}
+				console.log(sameRankHands.length + ' winners');
+			}
+			if( sameRankWinners.length < 2 ){
+				console.log('1 winner');
+				winners.push( sameRankWinners[0] )
 			}
 		}
 
-		// if we still get more than 1 winner check the lower pair
+		console.log(sameRankWinners);
+
+		//if we still get more than 1 winner check the lower pair
 		var sameRankWinner = [];
 		if( sameRankWinners.length > 1 ){
-			for( var i = 0 ; i < sameRankWinners.length-1; i++ ){
-				if( sameRankWinners[i][2][2] > sameRankWinners[i+1][2][2] ){
-					sameRankWinner.push( sameRankHands[i] );
-				}else{
-					sameRankWinner.push( sameRankHands[sameRankHands.length] );
+			//get the rank values first
+			var hiCardValues = [];
+			for(i=0;i<sameRankWinners.length;i++){
+				hiCardValues.push(sameRankWinners[i][2][2]);
+			}
+			console.log(hiCardValues);
+			var highest = Math.max.apply(Math, hiCardValues);
+			console.log(highest);
+
+			for( var i = 0 ; i < sameRankWinners.length; i++ ){
+				if( sameRankWinners[i][2][2] == highest ){
+					winners.push( sameRankWinners[i] )
 				}
 			}
-		}else{
-			winners.push( sameRankWinners[0] );
 		}
-
-		//sort winners accoring to highest card value
-		winners = winners.sort(function (a,b){
-			if( a[0][0][1] == b[0][0][1] ){
-				if (a[0][0][2] > b[0][0][2]) return -1;
-				if (a[0][0][2] < b[0][0][2]) return 1;
-				return 0;
-			}
-			if (a[0][0][1] > b[0][0][1]) return -1;
-			if (a[0][0][1] < b[0][0][1]) return 1;
-			return 0;
-		});
-
-		return winners;
 	}
+
+	//sort winners again just in case
+	winners = winners.sort(function (a,b){
+		if( a[2][0][1] == b[2][0][1] ){
+			if (a[2][0][2] > b[2][0][2]) return -1;
+			if (a[2][0][2] < b[2][0][2]) return 1;
+			return 0;
+		}
+		if (a[2][0][1] > b[2][0][1]) return -1;
+		if (a[2][0][1] < b[2][0][1]) return 1;
+		return 0;
+	});
+
+	return winners;
 }
 
 /*
@@ -503,3 +511,30 @@ Holdem.prototype.getTopRank = function( ){
 
 	return topRank;
 }
+
+
+/* ============================
+ * Translatable text
+ * ==========================*/
+
+var PokerText = {
+	suits:['C','S','H','D'],
+	valueSuit:['Clubs','Spades','Hearts','Diamonds'],
+	ranks:['A','2','3','4','5','6','7','8','9','10','J','Q','K'],
+	valueRank:['Ace','Deus','Trey','4','5','6','7','8','9','10','Jack','Queen','King','Ace'],
+	invalid:'Invalid value',
+	highCard:'High card ',
+	pairOf:	'Pair of ', 
+	twoPairsOf:	'Two pairs of ', 
+	threeOfAKind:'Three of a kind ', 
+	highStraight:' high straight', 
+	flush:'flush', 
+	fullHouse:'Full house ', 
+	fourOfAKind:'Four of a kind ', 
+	straightFlush:'Straight flush ',
+	royalFlush:'Royal flush', 
+	with:' with ',
+	over:' over ',
+	high:' high ',
+	kicker: ' kicker '
+} 
